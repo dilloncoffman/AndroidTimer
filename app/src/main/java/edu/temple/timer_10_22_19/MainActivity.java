@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                             // Ask the Main thread via its Handler to do the job for us of counting down
                             // 1. Need a Message object
-                            Message msg = new Message(); // allows you to pass messages, stuff something into Message object and pass it to the Main thread via a Handler
+                            Message msg = Message.obtain(); // .obtain() will pull a Message object from the pool of Message object it maintains to use
                             msg.what = i; // .what takes a single integer value
                             timerHandler.sendMessage(msg); // use Main thread's Handler; Worker thread can access any object as long as it's not a View
                         }
