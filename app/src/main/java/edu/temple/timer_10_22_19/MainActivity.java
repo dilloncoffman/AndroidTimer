@@ -41,10 +41,7 @@ public class MainActivity extends AppCompatActivity {
                                 e.printStackTrace();
                             }
                             // Ask the Main thread via its Handler to do the job for us of counting down
-                            // 1. Need a Message object
-                            Message msg = Message.obtain(); // .obtain() will pull a Message object from the pool of Message object it maintains to use
-                            msg.what = i; // .what takes a single integer value
-                            timerHandler.sendMessage(msg); // use Main thread's Handler; Worker thread can access any object as long as it's not a View
+                            timerHandler.sendEmptyMessage(i); // if all you want to send is one integer value
                         }
                     }
                 }.start(); // could also just say Thread t = new Thread() and then call t.start() to have a reference to that thread to do something else later
