@@ -1,0 +1,2 @@
+include ':app'
+rootProject.name='Timer_10_22_19'
