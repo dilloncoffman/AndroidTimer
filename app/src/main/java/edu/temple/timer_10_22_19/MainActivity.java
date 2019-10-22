@@ -15,7 +15,8 @@ public class MainActivity extends AppCompatActivity {
     // always import android.os.Handler, not the .util one
     Handler timerHandler = new Handler(new Handler.Callback() {
         @Override
-        public boolean handleMessage(Message msg) { // callback invoked every time a message is received from a worker thread
+        public boolean handleMessage(Message msg) { // callback invoked every time a message is received from a worker thread (what is sent from the worker thread)
+            timerLabel.setText(String.valueOf(msg.what)); // now Main thread handler can access timerLabel, whereas the worker thread could not
             return false;
         }
     }); // use a Handler that takes a callback object
