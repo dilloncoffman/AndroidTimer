@@ -1,5 +1,6 @@
 package edu.temple.timer_10_22_19;
 
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
@@ -12,22 +13,6 @@ public class MainActivity extends AppCompatActivity {
     TextView timerLabel;
     Button button;
 
-    TimerStates timerState = TimerStates.STOPPED;
-
-    // always import android.os.Handler, not the .util one
-    Handler timerHandler = new Handler(new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) { // callback invoked every time a message is received from a worker thread (what is sent from the worker thread)
-            if (msg.what >= 0) {
-                timerLabel.setText(String.valueOf(msg.what)); // now Main thread handler can access timerLabel, whereas the worker thread could not
-            } else {
-                timerState = TimerStates.STOPPED; // set timer state to stopped after loop finishes
-                button.setText("Start"); // set button text back to start once it's stopped
-            }
-            return false;
-        }
-    }); // use a Handler that takes a callback object
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,43 +21,46 @@ public class MainActivity extends AppCompatActivity {
         timerLabel = findViewById(R.id.timerLabel);
         button = findViewById(R.id.button);
 
-        button.setOnClickListener(v -> { // lambda function, v is the View object on which the event is occurring
-            // Change behavior of button to move through various states, button can pause and start, not stop, timer will only stop when time runs out
-            if (timerState == TimerStates.STOPPED) {
-                timerState = TimerStates.RUNNING;
-                button.setText("Pause");
-                // Create an a new thread and start on each button press if it was stopped
-                Thread t = new Thread () {
-                    @Override
-                    public void run() {
-                        for (int i = 20; i >= 0; i--){
-
-                            while(timerState == TimerStates.PAUSED); // Spin-lock
-
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException e){
-                                e.printStackTrace();
-                            }
-                            // Ask the Main thread via its Handler to do the job for us of counting down
-                            timerHandler.sendEmptyMessage(i); // if all you want to send is one integer value
-                        }
-                        // Send message to main UI thread to update view to start button
-                        timerHandler.sendEmptyMessage(-1);
-                    }
-                };
-                t.start();
-            } else if (timerState == TimerStates.RUNNING) {
-                timerState = TimerStates.PAUSED;
-                button.setText("Start");
-            } else {
-                // Timer was PAUSED, but clicked Start
-                timerState = TimerStates.RUNNING; // set UI thread will set to running which would get us out o Spin-lock above for background thread timer
-                button.setText("Pause");
-            }
-        });
+        // create instance of AsyncTask and execute it, because I cannot execute same AsyncTask twice, don't even need to hold a reference to it, only need reference with cancel operation
+        button.setOnClickListener(v -> new TimerAsyncTask().execute(50));
     }
 
-    enum TimerStates {STOPPED, RUNNING, PAUSED}
+    // provide 3 data types when defining AsyncTask,
+    // 1st is type of data that will be passed to AsyncTask for it to operate on, this data will be available in doInBackground, -
+    // 2nd arg will be data passed in any call to publishProgress and therefore will be the argument received by onUpdateProgress - what you're putting in the .what() for Message object in this case
+    // the 3rd arg will be the type returned by doInBackground which will be the type received by onPostExecute() - print a message in our case when everything is done in this case
+    class TimerAsyncTask extends AsyncTask<Integer, Integer, String> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // where you can set up your display for whatever reason
+            timerLabel.setText("Click button to Start"); // first thing to happen when AsyncTask executes
+        }
+
+        @Override
+        protected String doInBackground(Integer... integers) {
+            // Takes list of integers specified in generic for AsyncTask above, the 3 argument data types
+            for (int i = 20; integers[i] >= 0; i--) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                publishProgress(i);
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            timerLabel.setText(String.valueOf(values[0]));
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            timerLabel.setText(s);
+        }
+    }
 
 }
